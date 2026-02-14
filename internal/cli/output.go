@@ -10,6 +10,7 @@ package cli
 import (
 	"fmt"
 	"github.com/p9labs-io/p9/internal/ports"
+	"strings"
 )
 
 func PrintPortCheckResult(result ports.PortCheckResult) {
@@ -38,4 +39,16 @@ func PrintUsage() {
 	fmt.Println("  p9 -r <host:port>  Check if remote port is open")
 	fmt.Println("  p9 -l              List local open ports")
 	fmt.Println("  p9 -d <domain>     Lookup domain/IP information")
+}
+
+func PrintListeningPorts(ports []ports.ListeningPort) {
+	if len(ports) == 0 {
+		fmt.Println("No listening ports found")
+		return
+	}
+
+	fmt.Println("Listening ports:")
+	for _, p := range ports {
+		fmt.Printf("  %s %s:%d\n", strings.ToUpper(p.Protocol), p.IP, p.Port)
+	}
 }

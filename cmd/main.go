@@ -9,6 +9,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/p9labs-io/p9/internal/cli"
 	"github.com/p9labs-io/p9/internal/ports"
 	"time"
@@ -29,7 +30,7 @@ func main() {
 	// For now, just print which operation was requested
 	remoteFlag := flag.String("r", "", "Check remote port (host:port)")
 	timeoutFlag := flag.Duration("t", 3*time.Second, "Override default timeout (e.g. -t 5s, -t 60s)")
-	//localFlag := flag.Bool("l", false, "List local open ports")
+	localFlag := flag.Bool("l", false, "List local open ports")
 	//domainFlag := flag.String("d", "", "Domain/IP lookup")
 	flag.Parse()
 
@@ -37,6 +38,13 @@ func main() {
 	case *remoteFlag != "":
 		result := ports.CheckPortTCP(*remoteFlag, *timeoutFlag)
 		cli.PrintPortCheckResult(result)
+	case *localFlag:
+		ports, err := ports.GetListeningPorts()
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+		cli.PrintListeningPorts(ports)
 	default:
 		cli.PrintUsage()
 		flag.PrintDefaults()
