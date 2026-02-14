@@ -1,0 +1,2 @@
+Legal Disclaimer
+This tool is for authorized network diagnostic and educational purposes only. P9 Labs is not responsible for any misuse or illegal activities. By using this tool, you agree to comply with all local and international laws.
