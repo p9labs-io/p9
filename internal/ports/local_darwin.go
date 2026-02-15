@@ -41,6 +41,7 @@ func GetListeningPorts() ([]ListeningPort, error) {
 		fields := strings.Fields(line)
 
 		if len(fields) < 9 {
+			fmt.Println("Something went wrong with lsof output fields")
 			continue
 		}
 
