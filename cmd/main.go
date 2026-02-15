@@ -39,12 +39,12 @@ func main() {
 		result := ports.CheckPortTCP(*remoteFlag, *timeoutFlag)
 		cli.PrintPortCheckResult(result)
 	case *localFlag:
-		ports, err := ports.GetListeningPorts()
+		result, err := ports.GetListeningPorts()
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
 		}
-		cli.PrintListeningPorts(ports)
+		cli.PrintListeningPorts(result)
 	default:
 		cli.PrintUsage()
 		flag.PrintDefaults()
