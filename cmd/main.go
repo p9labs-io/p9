@@ -1,8 +1,10 @@
 /*
- * Copyright 2026 P9 Labs
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
+ *  * Copyright 2026 P9 Labs
+ *  *
+ *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  * you may not use this file except in compliance with the License.
+ *
  */
 
 package main
@@ -11,6 +13,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/p9labs-io/p9/internal/cli"
+	"github.com/p9labs-io/p9/internal/dns"
 	"github.com/p9labs-io/p9/internal/ports"
 	"time"
 )
@@ -31,7 +34,7 @@ func main() {
 	remoteFlag := flag.String("r", "", "Check remote port (host:port)")
 	timeoutFlag := flag.Duration("t", 3*time.Second, "Override default timeout (e.g. -t 5s, -t 60s)")
 	localFlag := flag.Bool("l", false, "List local open ports")
-	//domainFlag := flag.String("d", "", "Domain/IP lookup")
+	domainFlag := flag.String("d", "", "Domain/IP lookup")
 	flag.Parse()
 
 	switch {
@@ -45,6 +48,8 @@ func main() {
 			return
 		}
 		cli.PrintListeningPorts(result)
+	case *domainFlag != "":
+		dns.LookupDomain(*domainFlag)
 	default:
 		cli.PrintUsage()
 		flag.PrintDefaults()
