@@ -35,6 +35,7 @@ func main() {
 	timeoutFlag := flag.Duration("t", 3*time.Second, "Override default timeout (e.g. -t 5s, -t 60s)")
 	localFlag := flag.Bool("l", false, "List local open ports")
 	domainFlag := flag.String("d", "", "Domain/IP lookup")
+	whoisFlag := flag.String("w", "", "Whois Lookup")
 	flag.Parse()
 
 	switch {
@@ -50,6 +51,8 @@ func main() {
 		cli.PrintListeningPorts(result)
 	case *domainFlag != "":
 		dns.LookupDomain(*domainFlag)
+	case *whoisFlag != "":
+		cli.PrintWhoisResult(*whoisFlag)
 	default:
 		cli.PrintUsage()
 		flag.PrintDefaults()

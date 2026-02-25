@@ -1,14 +1,17 @@
 /*
- * Copyright 2026 P9 Labs
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
+ *  * Copyright 2026 P9 Labs
+ *  *
+ *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  * you may not use this file except in compliance with the License.
+ *
  */
 
 package cli
 
 import (
 	"fmt"
+	"github.com/p9labs-io/p9/internal/dns"
 	"github.com/p9labs-io/p9/internal/ports"
 	"strings"
 )
@@ -50,5 +53,14 @@ func PrintListeningPorts(ports []ports.ListeningPort) {
 	fmt.Println("Listening ports:")
 	for _, p := range ports {
 		fmt.Printf("  %s %s:%d\n", strings.ToUpper(p.Protocol), p.IP, p.Port)
+	}
+}
+
+func PrintWhoisResult(domain string) {
+	server, found := dns.GetWhoisServer(domain)
+	if found {
+		dns.WhoisLookup(server, domain)
+	} else {
+		fmt.Println(server)
 	}
 }

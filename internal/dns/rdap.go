@@ -86,7 +86,7 @@ var rdapconfig RdapConfig
 
 func RdapServer(domain string) string {
 	config := createConfig()
-	tld := extractTLD(domain)
+	tld := ExtractTLD(domain)
 	baseURL := config[tld]
 	if baseURL == "" {
 		log.Fatalf("TLD '.%s' is not supported by RDAP", tld)
@@ -94,7 +94,7 @@ func RdapServer(domain string) string {
 	return baseURL
 }
 
-func extractTLD(domain string) string {
+func ExtractTLD(domain string) string {
 	i := strings.LastIndex(domain, ".")
 	tld := domain[i+1:]
 	return tld
