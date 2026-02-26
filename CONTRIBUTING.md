@@ -6,31 +6,36 @@ We are building P9 without heavy frameworks to keep the binary light and the cod
 ```
 p9/
 ├── cmd/
-│   └── main.go          ← Entry point, CLI routing only
+│   └── main.go           ← Entry point, CLI routing only
 ├── internal/
-│   ├── ports/           ← Port operations (local/remote)
-│   │   ├── local.go     ← List listening ports
-│   │   └── remote.go    ← Check remote connectivity
-│   ├── dns/             ← DNS/domain operations
-│   │   └── lookup.go    ← DNS resolution, WHOIS
-│   └── cli/             ← Output formatting ONLY
-│       └── output.go    ← Display logic, no business logic
+│   ├── ports/            ← Port operations (local/remote)
+│   │   ├── local.go      ← Shared local port logic
+│   │   ├── local_linux.go   ← Linux-specific implementation
+│   │   ├── local_darwin.go  ← macOS-specific implementation
+│   │   └── remote.go     ← Check remote TCP connectivity
+│   ├── dns/              ← DNS/domain operations
+│   │   ├── rdap.go       ← RDAP lookup, IANA bootstrap config caching
+│   │   └── whois.go      ← WHOIS lookup via TCP port 43
+│   └── cli/              ← Output formatting ONLY
+│       └── output.go     ← Display logic, no business logic
 ```
 
 **Guidelines:**
 - Business logic goes in `internal/ports/` or `internal/dns/`
 - Output formatting goes in `internal/cli/`
-- Keep `main.go` thin - just routing
+- Keep `main.go` thin — just routing and orchestration
+- `dns` package functions should return data, not print directly
+- No external dependencies — use Go standard library only (`os`, `flag`, `net`, `strings`, etc.)
 
 ## Workflow
 1. **Fork the repo**: This creates your own copy where you have permission to work.
 2. **Create a branch**: Name it after your feature (e.g., `feat-dns-trace`).
-3. **No Frameworks**: Use the Go standard library (`os`, `flag`, `net`) wherever possible.
+3. **No Frameworks**: Use the Go standard library wherever possible.
 4. **Submit a PR**: Propose merging your fork's branch into our `main` branch.
 
 ## Pull Request Guidelines
 - **One feature per PR** - keeps reviews manageable
-- **Test your changes** - actually run the tool
+- **Test your changes** - actually run the tool against real domains and hosts
 - **Update README** - if adding user-facing features
 - **Clear description** - explain what and why
 
@@ -40,3 +45,9 @@ Before submitting:
 - Run `go fmt ./...` to format code
 - Run `go vet ./...` to check for issues
 - Test your changes: `go build -o p9 ./cmd && ./p9 [your-feature]`
+
+## Platform Notes
+
+- Local port listing (`-l`) has platform-specific implementations in `local_linux.go` and `local_darwin.go`
+- If adding features that behave differently per OS, follow this same pattern
+- Windows support is not fully tested — contributions welcome

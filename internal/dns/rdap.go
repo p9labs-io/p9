@@ -23,9 +23,13 @@ import (
 
 // Lookup
 
-func LookupDomain(domain string) {
+func RdapResult(domain string) (string, bool) {
 
-	baseURL := RdapServer(domain)
+	baseURL, supports := RdapServer(domain)
+	if !supports {
+		return "", false
+	}
+
 	url := fmt.Sprint(baseURL, "domain/", domain)
 	res, err := http.Get(url)
 	if err != nil {
@@ -73,7 +77,7 @@ func LookupDomain(domain string) {
 	if err != nil {
 		fmt.Println("error:", err)
 	}
-	os.Stdout.Write(output)
+	return string(output), true
 
 }
 
@@ -84,18 +88,22 @@ type RdapConfig struct {
 
 var rdapconfig RdapConfig
 
-func RdapServer(domain string) string {
+func RdapServer(domain string) (string, bool) {
 	config := createConfig()
-	tld := extractTLD(domain)
+	tld := ExtractTLD(domain)
 	baseURL := config[tld]
 	if baseURL == "" {
-		log.Fatalf("TLD '.%s' is not supported by RDAP", tld)
+		log.Printf("TLD '.%s' is not supported by RDAP", tld)
+		return "", false
 	}
-	return baseURL
+	return baseURL, true
 }
 
-func extractTLD(domain string) string {
+func ExtractTLD(domain string) string {
 	i := strings.LastIndex(domain, ".")
+	if i == -1 {
+		log.Fatalf("Invalid domain name")
+	}
 	tld := domain[i+1:]
 	return tld
 }
