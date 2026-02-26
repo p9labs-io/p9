@@ -18,6 +18,15 @@ import (
 	"time"
 )
 
+func runWhoisLookup(domain string, timeout time.Duration) {
+	server, found := dns.GetWhoisServer(domain, timeout)
+	if found {
+		fmt.Print(dns.WhoisLookup(server, domain, timeout))
+	} else {
+		fmt.Println(server)
+	}
+}
+
 func main() {
 	// TODO: Define flags here
 	/*
@@ -35,7 +44,8 @@ func main() {
 	timeoutFlag := flag.Duration("t", 3*time.Second, "Override default timeout (e.g. -t 5s, -t 60s)")
 	localFlag := flag.Bool("l", false, "List local open ports")
 	domainFlag := flag.String("d", "", "Domain/IP lookup")
-	whoisFlag := flag.String("w", "", "Whois Lookup")
+	rdapFlag := flag.Bool("rdap", false, "rdap Lookup")
+	whoisFlag := flag.Bool("whois", false, "Whois Lookup")
 	flag.Parse()
 
 	switch {
@@ -50,9 +60,22 @@ func main() {
 		}
 		cli.PrintListeningPorts(result)
 	case *domainFlag != "":
-		dns.LookupDomain(*domainFlag)
-	case *whoisFlag != "":
-		cli.PrintWhoisResult(*whoisFlag)
+		switch {
+		case *whoisFlag:
+			runWhoisLookup(*domainFlag, *timeoutFlag)
+		case *rdapFlag:
+			result, _ := dns.RdapResult(*domainFlag)
+			fmt.Print(result)
+		default:
+			fmt.Println("Trying RDAP Servers...")
+			result, supported := dns.RdapResult(*domainFlag)
+			if supported {
+				fmt.Print(result)
+			} else {
+				fmt.Println("Trying WHOIS Servers...")
+				runWhoisLookup(*domainFlag, *timeoutFlag)
+			}
+		}
 	default:
 		cli.PrintUsage()
 		flag.PrintDefaults()

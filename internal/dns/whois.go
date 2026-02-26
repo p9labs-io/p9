@@ -14,18 +14,24 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"strings"
+	"time"
 )
 
-func GetWhoisServer(fqdn string) (string, bool) {
-	conn, err := net.Dial("tcp", "whois.iana.org:43")
+func GetWhoisServer(fqdn string, timeout time.Duration) (string, bool) {
+	//TODO: implement unknown tlds message
+
+	conn, err := net.DialTimeout("tcp", "whois.iana.org:43", timeout)
 	if err != nil {
-		log.Printf("IANA WHOIS server unavailable, %v\n", err)
+		log.Fatalf("IANA WHOIS server unavailable, %v\n", err)
 	}
+	defer conn.Close()
 	tld := ExtractTLD(fqdn)
 	query := fmt.Sprintf("%s\r\n", tld)
-	conn.Write([]byte(query))
+	_, err = conn.Write([]byte(query))
+	if err != nil {
+		log.Printf("Error writing to connection:\n%v", err)
+	}
 
 	var whoisValue, remarksValue string
 	scanner := bufio.NewScanner(conn)
@@ -41,82 +47,42 @@ func GetWhoisServer(fqdn string) (string, bool) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "reading standard input:", err)
+		log.Printf("Error reading response: %v", err)
 	}
 	if whoisValue == "" {
 		noWhois := fmt.Sprintf("No whois server provided, please use information below: \n%s", remarksValue)
+		//TODO: multiple remarks case
 		return noWhois, false
 	}
-	return fmt.Sprintf("%s", whoisValue), true
+	return whoisValue, true
 }
 
-func WhoisLookup(srv string, domain string) {
+func WhoisLookup(srv string, domain string, timeout time.Duration) string {
 	address := fmt.Sprintf("%s:43", srv)
-	conn, err := net.Dial("tcp", address)
+	conn, err := net.DialTimeout("tcp", address, timeout)
 	if err != nil {
-		log.Printf("WHOIS server unavailable, %v\n", err)
+		log.Fatalf("WHOIS server unavailable, %v\n", err)
 	}
+	defer conn.Close()
 	query := fmt.Sprintf("%s\r\n", domain)
-	conn.Write([]byte(query))
+	_, err = conn.Write([]byte(query))
+	if err != nil {
+		log.Printf("Error writing to connection:\n%v", err)
+	}
 
+	var output []string
+	prefix := []string{"Domain", "Creation Date", "Registry Expiry Date", "Updated Date", "Registrar ", "Registrant", "Admin", "Tech", "Name Server", "DNSSEC"}
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "Domain") {
-			value := strings.SplitN(line, ":", 2)
-			fmt.Println(strings.TrimSpace(value[1]))
+		line := strings.TrimSpace(scanner.Text())
+		for _, v := range prefix {
+			if strings.HasPrefix(line, v) {
+				output = append(output, line)
+			}
 		}
-		if strings.HasPrefix(line, "Registrar") {
-			value := strings.SplitN(line, ":", 2)
-			fmt.Println(strings.TrimSpace(value[1]))
-		}
-		if strings.HasPrefix(line, "Registrant") {
-			value := strings.SplitN(line, ":", 2)
-			fmt.Println(strings.TrimSpace(value[1]))
-		}
-		if strings.HasPrefix(line, "Admin") {
-			value := strings.SplitN(line, ":", 2)
-			fmt.Println(strings.TrimSpace(value[1]))
-		}
-		if strings.HasPrefix(line, "Tech") {
-			value := strings.SplitN(line, ":", 2)
-			fmt.Println(strings.TrimSpace(value[1]))
-		}
-		if strings.HasPrefix(line, "Name Server:") {
-			value := strings.SplitN(line, ":", 2)
-			fmt.Println(strings.TrimSpace(value[1]))
-		}
-		if strings.HasPrefix(line, "DNSSEC") {
-			value := strings.SplitN(line, ":", 2)
-			fmt.Println(strings.TrimSpace(value[1]))
-		}
-
-		//fmt.Println(scanner.Text())
 	}
 	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "reading standard input:", err)
+		log.Printf("Error reading standard input: %v", err)
 	}
+	return strings.Join(output, "\n")
 }
-
-//
-//func whoisParser(line string) (string, bool) {
-//	if strings.HasPrefix(line, "whois") {
-//		value := strings.SplitN(line, ":", 2)
-//		result := strings.TrimSpace(value[1])
-//		fmt.Printf("%v", result)
-//		if result == "" {
-//			return "No whois server specified", false
-//		}
-//		return result, true
-//	}
-//	return "whois field not found", false
-//}
-//
-//func remarksParser(line string) string {
-//	for strings.HasPrefix(line, "remarks") {
-//		value := strings.SplitN(line, ":", 2)
-//		result := strings.TrimSpace(value[1])
-//		return result
-//	}
-//	return "remarks field not found"
-//}

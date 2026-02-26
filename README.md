@@ -29,6 +29,8 @@ p9 -r 192.168.1.1:22 -t 5s
 - Detailed error messages (connection refused, DNS errors, timeouts)
 - Customizable timeout via `-t` flag
 
+---
+
 #### Local Open Ports (`-l`)
 List all listening ports and services on your local machine.
 
@@ -39,30 +41,41 @@ p9 -l
 
 **Features:**
 - Shows port number, protocol, and listening address
-- **TCP ports only** (UDP support planned)
+- TCP ports only (UDP support planned)
 - Cross-platform support (Linux, macOS)
 - IPv4 support
 
-#### Domain RDAP Lookup (`-d`)
-Query domain registration information using RDAP (Registration Data Access Protocol).
+---
+
+#### Domain Lookup (`-d`)
+Query domain registration information using RDAP or WHOIS protocols.
 
 ```bash
-# Lookup domain information
+# Auto mode: tries RDAP first, falls back to WHOIS
 p9 -d example.com
 
-# Pipe to jq for filtering
-p9 -d example.com | jq '.events'
-p9 -d example.com | jq '.nameservers'
+# Force RDAP lookup
+p9 -d example.com --rdap
+
+# Force WHOIS lookup
+p9 -d example.com --whois
 ```
 
-**Features:**
-- Domain name and status
-- Registration, expiration, and last updated dates
-- Nameserver information
-- DNSSEC information
-- JSON output for easy parsing
-- Automatic TLD routing to correct RDAP server
-- Local caching (30-day TTL) to avoid repeated downloads
+**How it works:**
+- By default, p9 tries RDAP first. If the TLD doesn't support RDAP, it automatically falls back to WHOIS.
+- Use `--rdap` or `--whois` to force a specific protocol.
+- Some ccTLDs (e.g. `.az`) have no public WHOIS or RDAP server — p9 will inform you and suggest alternatives where available.
+
+##### RDAP Output
+
+JSON output, easy to pipe to `jq`:
+
+```bash
+p9 -d example.com | jq '.events'
+p9 -d example.com | jq '.nameservers'
+p9 -d example.org | jq '.events[] | select(.eventAction=="expiration")'
+p9 -d example.org | jq '.nameservers[].ldhName'
+```
 
 **Supported output fields:**
 - `ldhName` - Domain name
@@ -71,15 +84,37 @@ p9 -d example.com | jq '.nameservers'
 - `status` - Domain status codes
 - `secureDNS` - DNSSEC configuration
 
+##### WHOIS Output
+
+Plain text output with key registration fields:
+- Domain name and status
+- Creation, expiry, and updated dates
+- Registrar information
+- Registrant, Admin, Tech contacts
+- Name servers
+- DNSSEC
+
+**RDAP Configuration Cache:**
+
+The tool downloads and caches RDAP server configurations from IANA. The config file location varies by platform:
+- **Linux:** `~/.config/.p9/rdap_config`
+- **macOS:** `~/Library/Application Support/.p9/rdap_config`
+- **Windows:** `%APPDATA%\.p9\rdap_config`
+
+This file is automatically refreshed every 30 days.
+
+---
+
 ### 🚧 Planned Features
 
 - [ ] **UDP port checking** - Test UDP port connectivity (part of `-r` functionality)
 - [ ] **UDP port listing** - Show UDP listening ports in local scan (`-l`)
 - [ ] **IPv6 support** - Local port checking for IPv6 addresses
-- [ ] **Traditional WHOIS** - Support legacy WHOIS protocol
 - [ ] **IP geolocation** - Lookup IP address location and ASN information
 - [ ] **Traceroute** - Network path visualization
 - [ ] **DNS record lookup** - Query A, AAAA, MX, TXT records
+
+---
 
 ## Installation
 
@@ -101,6 +136,8 @@ go install ./cmd/
 
 Download pre-built binaries from the [releases page](https://github.com/p9labs-io/p9/releases).
 
+---
+
 ## Usage
 
 ```
@@ -111,9 +148,14 @@ Flags:
         Check remote port (host:port)
   -t duration
         Override default timeout for port checks (default 3s)
-  -l    List local open ports
+  -l
+        List local open ports
   -d string
-        Domain RDAP lookup
+        Domain lookup (RDAP with WHOIS fallback)
+  --rdap
+        Force RDAP lookup (use with -d)
+  --whois
+        Force WHOIS lookup (use with -d)
 ```
 
 ### Examples
@@ -128,13 +170,21 @@ p9 -r slow-server.com:80 -t 10s
 # List local listening services
 p9 -l
 
-# Domain lookup
+# Domain lookup (auto: RDAP → WHOIS fallback)
 p9 -d google.com
+
+# Force WHOIS
+p9 -d google.com --whois
+
+# Force RDAP
+p9 -d google.com --rdap
 
 # Extract specific RDAP fields
 p9 -d example.org | jq '.events[] | select(.eventAction=="expiration")'
 p9 -d example.org | jq '.nameservers[].ldhName'
 ```
+
+---
 
 ## Project Structure
 
@@ -145,8 +195,9 @@ p9/
 ├── internal/
 │   ├── cli/              # Output formatting
 │   │   └── output.go
-│   ├── dns/              # DNS/RDAP lookup
-│   │   └── rdap.go
+│   ├── dns/              # DNS/RDAP/WHOIS lookup
+│   │   ├── rdap.go
+│   │   └── whois.go
 │   └── ports/            # Port scanning
 │       ├── local.go
 │       ├── local_darwin.go
@@ -156,14 +207,7 @@ p9/
 └── README.md
 ```
 
-## RDAP Configuration
-
-The tool downloads and caches RDAP server configurations from IANA. The config file location varies by platform:
-- **Linux:** `~/.config/.p9/rdap_config`
-- **macOS:** `~/Library/Application Support/.p9/rdap_config`
-- **Windows:** `%APPDATA%\.p9\rdap_config`
-
-This file is automatically refreshed every 30 days.
+---
 
 ## Requirements
 
@@ -174,7 +218,9 @@ This file is automatically refreshed every 30 days.
 
 - ✅ Linux
 - ✅ macOS
-- ⚠️  Windows (not fully tested)
+- ⚠️ Windows (not fully tested)
+
+---
 
 ## Contributing
 
@@ -191,4 +237,5 @@ Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) file for 
 ## Acknowledgments
 
 - RDAP server routing based on [IANA RDAP Bootstrap Registry](https://data.iana.org/rdap/)
+- WHOIS server routing based on [IANA WHOIS service](https://www.iana.org/whois)
 - Inspired by traditional network debugging tools like `nc`, `nmap`, and `whois`

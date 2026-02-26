@@ -11,7 +11,6 @@ package cli
 
 import (
 	"fmt"
-	"github.com/p9labs-io/p9/internal/dns"
 	"github.com/p9labs-io/p9/internal/ports"
 	"strings"
 )
@@ -37,11 +36,14 @@ func PrintPortCheckResult(result ports.PortCheckResult) {
 }
 
 func PrintUsage() {
-	fmt.Println("Debugging tool")
+	fmt.Println("p9 - Network debugging tool")
 	fmt.Println("\nUsage:")
-	fmt.Println("  p9 -r <host:port>  Check if remote port is open")
-	fmt.Println("  p9 -l              List local open ports")
-	fmt.Println("  p9 -d <domain>     Lookup domain/IP information")
+	fmt.Println("  p9 -r <host:port>          Check if remote port is open")
+	fmt.Println("  p9 -r <host:port> -t <dur> Check with custom timeout (e.g. -t 5s)")
+	fmt.Println("  p9 -l                      List local open ports")
+	fmt.Println("  p9 -d <domain>             Domain lookup (RDAP with WHOIS fallback)")
+	fmt.Println("  p9 -d <domain> --rdap      Force RDAP lookup")
+	fmt.Println("  p9 -d <domain> --whois     Force WHOIS lookup")
 }
 
 func PrintListeningPorts(ports []ports.ListeningPort) {
@@ -53,14 +55,5 @@ func PrintListeningPorts(ports []ports.ListeningPort) {
 	fmt.Println("Listening ports:")
 	for _, p := range ports {
 		fmt.Printf("  %s %s:%d\n", strings.ToUpper(p.Protocol), p.IP, p.Port)
-	}
-}
-
-func PrintWhoisResult(domain string) {
-	server, found := dns.GetWhoisServer(domain)
-	if found {
-		dns.WhoisLookup(server, domain)
-	} else {
-		fmt.Println(server)
 	}
 }
