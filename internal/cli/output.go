@@ -52,7 +52,19 @@ func PrintListeningPorts(ports []ports.ListeningPort) {
 		return
 	}
 
-	fmt.Println("Listening ports:")
+	fmt.Println("Listening TCP ports:")
+	for _, p := range ports {
+		fmt.Printf("  %s %s:%d\n", strings.ToUpper(p.Protocol), p.IP, p.Port)
+	}
+}
+
+func PrintBoundUDPPorts(ports []ports.BoundUDPPort) {
+	if len(ports) == 0 {
+		fmt.Println("No listening ports found")
+		return
+	}
+
+	fmt.Println("Bound UDP ports:")
 	for _, p := range ports {
 		fmt.Printf("  %s %s:%d\n", strings.ToUpper(p.Protocol), p.IP, p.Port)
 	}
