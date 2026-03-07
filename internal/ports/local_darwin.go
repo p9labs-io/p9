@@ -38,7 +38,7 @@ func GetListeningPorts() (ListeningPorts, error) {
 		return nil, err
 	}
 
-	var ports []ListeningPort
+	var ports ListeningPorts
 	scanner := bufio.NewScanner(output)
 
 	// Skip header line
@@ -56,6 +56,7 @@ func GetListeningPorts() (ListeningPorts, error) {
 
 		nameField := fields[8]
 		protoField := strings.ToLower(fields[7])
+		commandField := strings.ToLower(fields[0])
 
 		splittedNameField := strings.SplitN(nameField, ":", 2)
 
@@ -71,7 +72,7 @@ func GetListeningPorts() (ListeningPorts, error) {
 			continue
 		}
 
-		ports = append(ports, ListeningPort{Port: p, Protocol: protoField, IP: ip})
+		ports = append(ports, ListeningPort{Command: commandField, Port: p, Protocol: protoField, IP: ip})
 	}
 
 	cmd.Wait()
@@ -110,12 +111,13 @@ func GetBoundUDPPorts() (BoundUDPPorts, error) {
 		fields := strings.Fields(line)
 
 		if len(fields) < 9 {
-			fmt.Println("Something went wrong with lsof output fields")
+			log.Printf("Something went wrong with lsof output fields")
 			continue
 		}
 
 		nameField := fields[8]
 		protoField := strings.ToLower(fields[7])
+		commandField := strings.ToLower(fields[0])
 
 		splittedNameField := strings.SplitN(nameField, ":", 2)
 
@@ -131,7 +133,7 @@ func GetBoundUDPPorts() (BoundUDPPorts, error) {
 				log.Printf("Warning: Skipping malformed port in line: %s (error: %v)\n", nameField, err)
 				continue
 			}
-			ports = append(ports, BoundUDPPort{Port: p, Protocol: protoField, IP: ip})
+			ports = append(ports, BoundUDPPort{Command: commandField, Port: p, Protocol: protoField, IP: ip})
 		}
 
 	}

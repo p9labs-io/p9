@@ -53,18 +53,26 @@ func main() {
 		result := ports.CheckPortTCP(*remoteFlag, *timeoutFlag)
 		cli.PrintPortCheckResult(result)
 	case *localFlag:
+		var converted []ports.LocalPorts
 		TCPresult, err := ports.GetListeningPorts()
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
 		}
-		cli.PrintListeningPorts(TCPresult.Deduplication())
+		for _, p := range TCPresult.Deduplication() {
+			converted = append(converted, p)
+		}
+		cli.PrintLocalPorts("Listening TCP ports:", converted)
+		converted = nil
 		UDPresult, err := ports.GetBoundUDPPorts()
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
 		}
-		cli.PrintBoundUDPPorts(UDPresult.Deduplication())
+		for _, p := range UDPresult.Deduplication() {
+			converted = append(converted, p)
+		}
+		cli.PrintLocalPorts("Bound UDP ports:", converted)
 	case *domainFlag != "":
 		switch {
 		case *whoisFlag:

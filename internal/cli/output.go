@@ -46,26 +46,15 @@ func PrintUsage() {
 	fmt.Println("  p9 -d <domain> --whois     Force WHOIS lookup")
 }
 
-func PrintListeningPorts(ports []ports.ListeningPort) {
+func PrintLocalPorts(header string, ports []ports.LocalPorts) {
 	if len(ports) == 0 {
-		fmt.Println("No listening ports found")
+		fmt.Printf("No listening ports found")
 		return
 	}
 
-	fmt.Println("Listening TCP ports:")
-	for _, p := range ports {
-		fmt.Printf("  %s %s:%d\n", strings.ToUpper(p.Protocol), p.IP, p.Port)
-	}
-}
+	fmt.Printf("%s\n", header)
 
-func PrintBoundUDPPorts(ports []ports.BoundUDPPort) {
-	if len(ports) == 0 {
-		fmt.Println("No listening ports found")
-		return
-	}
-
-	fmt.Println("Bound UDP ports:")
 	for _, p := range ports {
-		fmt.Printf("  %s %s:%d\n", strings.ToUpper(p.Protocol), p.IP, p.Port)
+		fmt.Printf("  \033[36m%-10s\033[0m %s %-20s:\033[33m%d\033[0m\n", p.GetCommand(), strings.ToUpper(p.GetProtocol()), p.GetIP(), p.GetPort())
 	}
 }
