@@ -7,7 +7,7 @@
  *
  */
 
-//go:build darwin
+//go:build darwin || linux
 
 package ports
 
@@ -24,7 +24,7 @@ import (
 
 func GetListeningPorts() (ListeningPorts, error) {
 	if _, err := exec.LookPath("lsof"); err != nil {
-		return nil, fmt.Errorf("lsof command not found - this tool requires lsof on macOS")
+		return nil, fmt.Errorf("lsof not found — install with: brew install lsof / apt install lsof / yum install lsof\n")
 	}
 
 	cmd := exec.Command("lsof", "-iTCP", "-sTCP:LISTEN", "-n", "-P")
@@ -50,7 +50,7 @@ func GetListeningPorts() (ListeningPorts, error) {
 		fields := strings.Fields(line)
 
 		if len(fields) < 9 {
-			fmt.Println("Something went wrong with lsof output fields")
+			log.Printf("Something went wrong with lsof output fields")
 			continue
 		}
 
@@ -81,7 +81,7 @@ func GetListeningPorts() (ListeningPorts, error) {
 
 func GetBoundUDPPorts() (BoundUDPPorts, error) {
 	if _, err := exec.LookPath("lsof"); err != nil {
-		return nil, fmt.Errorf("lsof command not found - this tool requires lsof on macOS")
+		return nil, fmt.Errorf("lsof not found — install with: brew install lsof / apt install lsof / yum install lsof\n")
 	}
 
 	cmd := exec.Command("lsof", "-iUDP", "-n", "-P")
@@ -135,7 +135,6 @@ func GetBoundUDPPorts() (BoundUDPPorts, error) {
 			}
 			ports = append(ports, BoundUDPPort{Command: commandField, Port: p, Protocol: protoField, IP: ip})
 		}
-
 	}
 
 	cmd.Wait()
