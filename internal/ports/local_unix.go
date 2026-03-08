@@ -22,6 +22,19 @@ import (
 	"strings"
 )
 
+func parseNameField(nameField string) (ip string, port string) {
+	splittedNameField := strings.Split(nameField, ":")
+
+	ip = strings.Join(splittedNameField[:len(splittedNameField)-1], ":")
+	ip = strings.Trim(ip, "[]")
+	port = splittedNameField[len(splittedNameField)-1]
+	if ip == "*" {
+		ip = "0.0.0.0"
+	}
+
+	return ip, port
+}
+
 func GetListeningPorts() (ListeningPorts, error) {
 	if _, err := exec.LookPath("lsof"); err != nil {
 		return nil, fmt.Errorf("lsof not found — install with: brew install lsof / apt install lsof / yum install lsof\n")
@@ -58,15 +71,9 @@ func GetListeningPorts() (ListeningPorts, error) {
 		protoField := strings.ToLower(fields[7])
 		commandField := strings.ToLower(fields[0])
 
-		splittedNameField := strings.SplitN(nameField, ":", 2)
-
-		if splittedNameField[0] == "*" {
-			splittedNameField[0] = "0.0.0.0"
-		}
-
-		ip := splittedNameField[0]
+		ip, port := parseNameField(nameField)
 		// Convert port string to int
-		p, err := strconv.Atoi(splittedNameField[1])
+		p, err := strconv.Atoi(port)
 		if err != nil {
 			log.Printf("Warning: Skipping malformed port in line: %s (error: %v)\n", nameField, err)
 			continue
@@ -119,16 +126,10 @@ func GetBoundUDPPorts() (BoundUDPPorts, error) {
 		protoField := strings.ToLower(fields[7])
 		commandField := strings.ToLower(fields[0])
 
-		splittedNameField := strings.SplitN(nameField, ":", 2)
-
-		if splittedNameField[0] == "*" {
-			splittedNameField[0] = "0.0.0.0"
-		}
-
-		ip := splittedNameField[0]
+		ip, port := parseNameField(nameField)
 		// Convert port string to int
-		if splittedNameField[1] != "*" {
-			p, err := strconv.Atoi(splittedNameField[1])
+		if port != "*" {
+			p, err := strconv.Atoi(port)
 			if err != nil {
 				log.Printf("Warning: Skipping malformed port in line: %s (error: %v)\n", nameField, err)
 				continue
@@ -139,5 +140,4 @@ func GetBoundUDPPorts() (BoundUDPPorts, error) {
 
 	cmd.Wait()
 	return ports, scanner.Err()
-
 }
